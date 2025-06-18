@@ -1,0 +1,16 @@
+// .sequelizerc
+
+// This file configures the Sequelize CLI to know where to find
+// your models, migrations, and seeders, and how to connect to your database.
+
+const path = require('path');
+
+// Load environment variables for database configuration
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
+
+module.exports = {
+  'config': path.resolve(__dirname, 'src/config/database.js'), // Path to your database config
+  'models-path': path.resolve(__dirname, 'src/models'),       // Path to your Sequelize models
+  'seeders-path': path.resolve(__dirname, 'seeders'),         // Path to your seeders
+  'migrations-path': path.resolve(__dirname, 'migrations')   // Path to your migrations
+};
