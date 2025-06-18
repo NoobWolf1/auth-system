@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { AppError } = require('../utils/errors');
+const { AppError } = require('../utils/error');
 
 class AuthService {
   generateTokens(userId) {

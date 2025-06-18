@@ -1,7 +1,7 @@
 // src/controllers/adminController.js
 
 const { User, Role } = require('../models');
-const { AppError } = require('../utils/errors');
+const { AppError } = require('../utils/error');
 const logger = require('../utils/logger'); // Import logger for better error insights
 
 class AdminController {

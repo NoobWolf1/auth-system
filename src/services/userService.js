@@ -1,7 +1,7 @@
 // src/services/userService.js
 
 const { User, Role } = require('../models');
-const { AppError } = require('../utils/errors');
+const { AppError } = require('../utils/error');
 const logger = require('../utils/logger'); // For logging service-level errors
 
 /**
