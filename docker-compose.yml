@@ -29,23 +29,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Redis (for caching and session management)
-  redis:
-    image: redis:7-alpine
-    container_name: auth_redis
-    restart: unless-stopped
-    ports:
-      - "${REDIS_PORT}:${REDIS_PORT}" # <-- From .env
-    volumes:
-      - redis_data:/data
-    networks:
-      - auth_network
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   # Node.js Application
   app:
     build: .
@@ -76,16 +59,10 @@ services:
       RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS} # <-- From .env
       RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS} # <-- From .env
       
-      # Redis Configuration
-      REDIS_HOST: ${REDIS_HOST:-redis} # Default to 'redis' if not in .env
-      REDIS_PORT: ${REDIS_PORT:-6379} # Default to '6379' if not in .env
-      
       # Logging
       LOG_LEVEL: ${LOG_LEVEL} # <-- From .env
     depends_on:
       postgres:
-        condition: service_healthy
-      redis:
         condition: service_healthy
     networks:
       - auth_network
@@ -137,8 +114,8 @@ services:
 volumes:
   postgres_data:
     driver: local
-  redis_data:
-    driver: local
+  # redis_data: # Removed as Redis service is removed
+  #   driver: local
 
 networks:
   auth_network:
