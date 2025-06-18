@@ -1,0 +1,27 @@
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Install nodemon globally
+RUN npm install -g nodemon
+
+# Copy package files
+COPY package*.json ./
+
+# Install all dependencies (including dev)
+RUN npm install
+
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001
+
+# Copy application code
+COPY . .
+
+# Change ownership
+RUN chown -R nodejs:nodejs /app
+USER nodejs
+
+EXPOSE 3000 9229
+
+CMD ["npm", "run", "dev"]
