@@ -1,4 +1,4 @@
-const { AppError } = require('../utils/errors');
+const { AppError } = require('../utils/error');
 const logger = require('../utils/logger');
 
 const handleSequelizeValidationError = (err) => {

@@ -1,7 +1,7 @@
 // src/middleware/validation.js
 
 const { validationResult } = require('express-validator');
-const { AppError } = require('../utils/errors'); // Import your custom error class
+const { AppError } = require('../utils/error'); // Import your custom error class
 
 /**
  * Middleware to handle validation results from express-validator.

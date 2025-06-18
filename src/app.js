@@ -8,7 +8,7 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 const adminRoutes = require('./routes/admin');
 const globalErrorHandler = require('./middleware/errorHandler');
-const { AppError } = require('./utils/errors');
+const { AppError } = require('./utils/error');
 
 const app = express();
 

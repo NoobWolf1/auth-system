@@ -1,23 +1,44 @@
-version: '3.8'
+# docker-compose.dev.yml (remove the 'version' line)
 
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile.dev
+    # Pass environment variables from .env
     environment:
-      NODE_ENV: development
-      LOG_LEVEL: debug
+      NODE_ENV: ${NODE_ENV}
+      LOG_LEVEL: ${LOG_LEVEL}
+      PORT: ${PORT}
+      API_PREFIX: ${API_PREFIX}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${DB_NAME}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_DIALECT: ${DB_DIALECT}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN}
+      JWT_REFRESH_EXPIRES_IN: ${JWT_REFRESH_EXPIRES_IN}
+      BCRYPT_ROUNDS: ${BCRYPT_ROUNDS}
+      RATE_LIMIT_WINDOW_MS: ${RATE_LIMIT_WINDOW_MS}
+      RATE_LIMIT_MAX_REQUESTS: ${RATE_LIMIT_MAX_REQUESTS}
     volumes:
       - .:/app
       - /app/node_modules
     command: npm run dev
     ports:
-      - "3000:3000"
-      - "9229:9229"  # Debug port
+      - "${PORT}:${PORT}"
+      - "9229:9229" # Debug port
+    # Add this depends_on block:
+    depends_on:
+      postgres:
+        condition: service_healthy # This ensures app waits for postgres to be healthy
 
   postgres:
     ports:
       - "5432:5432"
     environment:
       POSTGRES_HOST_AUTH_METHOD: trust
+    # Add a healthcheck to the postgres service in docker-compose.yml (if not already there) or ensure it's defined elsewhere
+    # (The previous docker-compose ps output showed postgres as healthy, so it likely has one)
