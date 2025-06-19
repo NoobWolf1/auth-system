@@ -278,7 +278,7 @@ paths:
           description: "ID of the user to retrieve."
           required: true
           schema:
-            type: string # Assuming user ID is a UUID or similar string
+            type: string
             format: uuid
             example: "31ed4682-7d39-483f-8145-d75986360912"
       responses:
@@ -310,7 +310,7 @@ paths:
           description: "ID of the user to delete."
           required: true
           schema:
-            type: string # Assuming user ID is a UUID or similar string
+            type: string 
             format: uuid
             example: "31ed4682-7d39-483f-8145-d75986360912"
       responses:
@@ -340,7 +340,7 @@ paths:
           description: "ID of the user whose status to update."
           required: true
           schema:
-            type: string # Assuming user ID is a UUID or similar string
+            type: string 
             format: uuid
             example: "31ed4682-7d39-483f-8145-d75986360912"
       requestBody:
@@ -412,7 +412,7 @@ components:
         role:
           type: string
           description: "User's role within the system."
-          enum: [ "PM", "Admin", "Legal", "Sales" ] # Inferred from example: "PM"
+          enum: [ "PM", "Admin", "Legal", "Sales" ] 
           example: "PM"
       example:
         email: "PM@example.com"
