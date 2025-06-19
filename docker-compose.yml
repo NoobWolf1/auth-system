@@ -69,7 +69,7 @@ services:
     volumes:
       - ./logs:/app/logs
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:${PORT}/health"] # <-- From .env
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:${PORT}{API_PREFIX}/health"] # <-- From .env
       interval: 30s
       timeout: 10s
       retries: 3
@@ -77,7 +77,9 @@ services:
 
   # Database Migration Service (runs once)
   migration:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.dev # Explicitly use Dockerfile.dev for migrations
     container_name: auth_migration
     environment:
       NODE_ENV: ${NODE_ENV} # <-- From .env

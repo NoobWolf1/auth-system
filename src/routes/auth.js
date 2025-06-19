@@ -3,22 +3,9 @@ const { body } = require('express-validator');
 const authController = require('../controllers/authController');
 const { validateRequest } = require('../middleware/validation');
 const { authenticate } = require('../middleware/auth');
+const { registerValidation, loginValidation } = require('../middleware/authValidators');
 
 const router = express.Router();
-
-// Registration validation rules
-const registerValidation = [
-  body('email').isEmail().normalizeEmail(),
-  body('password').isLength({ min: 8 }).matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/),
-  body('firstName').trim().isLength({ min: 2, max: 50 }),
-  body('lastName').trim().isLength({ min: 2, max: 50 }),
-];
-
-// Login validation rules
-const loginValidation = [
-  body('email').isEmail().normalizeEmail(),
-  body('password').notEmpty(),
-];
 
 // Routes
 router.post('/register', registerValidation, validateRequest, authController.register);

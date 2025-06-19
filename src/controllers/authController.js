@@ -2,11 +2,13 @@ const jwt = require('jsonwebtoken');
 const { User, Role } = require('../models');
 const authService = require('../services/authService');
 const { AppError } = require('../utils/error');
+const { ALLOWED_SELF_ASSIGN_ROLES } = require('../middleware/authValidators'); // Import allowed roles
 
 class AuthController {
   async register(req, res, next) {
     try {
-      const { email, password, firstName, lastName } = req.body;
+      // Destructure 'role' along with other user details
+      const { email, password, firstName, lastName, role } = req.body;
 
       // Check if user already exists
       const existingUser = await User.findOne({ where: { email } });
@@ -22,20 +24,44 @@ class AuthController {
         lastName,
       });
 
-      // Assign default role (e.g., 'Sales')
-      const defaultRole = await Role.findOne({ where: { name: 'Sales' } });
-      if (defaultRole) {
-        await user.addRole(defaultRole);
+      // --- Role Assignment Logic ---
+      let assignedRole = null;
+      if (role && ALLOWED_SELF_ASSIGN_ROLES.includes(role)) {
+        // If a valid, self-assignable role is provided, find and assign it
+        assignedRole = await Role.findOne({ where: { name: role } });
+      } else {
+        // Otherwise, assign the default 'Sales' role
+        assignedRole = await Role.findOne({ where: { name: 'Sales' } });
       }
+
+      if (assignedRole) {
+        await user.addRole(assignedRole);
+      } else {
+        // This case should ideally not happen if 'Sales' role is seeded
+        // and ALLOWED_SELF_ASSIGN_ROLES are correctly defined.
+        console.warn('Default role (Sales) not found during user registration!');
+      }
+      // --- End Role Assignment Logic ---
 
       // Generate tokens
       const tokens = authService.generateTokens(user.id);
+
+      // Re-fetch user with roles to include in the response
+      const registeredUserWithRoles = await User.findByPk(user.id, {
+        attributes: ['id', 'email', 'firstName', 'lastName', 'isActive', 'lastLogin', 'createdAt', 'updatedAt'],
+        include: [{
+          model: Role,
+          as: 'roles',
+          attributes: ['id', 'name', 'description', 'permissions'],
+          through: { attributes: [] },
+        }],
+      });
 
       res.status(201).json({
         success: true,
         message: 'User registered successfully',
         data: {
-          user,
+          user: registeredUserWithRoles, // Return user with assigned roles
           ...tokens,
         },
       });
@@ -84,7 +110,7 @@ class AuthController {
   async refreshToken(req, res, next) {
     try {
       const { refreshToken } = req.body;
-      
+
       if (!refreshToken) {
         throw new AppError('Refresh token is required', 400);
       }
