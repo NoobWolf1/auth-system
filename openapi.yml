@@ -3,7 +3,6 @@ info:
   title: "Authentication System API"
   description: |
     API for user authentication, profile management, and admin user management within an application.
-    This specification was generated from an Insomnia API collection.
   version: "1.0.0"
 servers:
   - url: "http://localhost:3000"
