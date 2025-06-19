@@ -89,6 +89,8 @@ services:
       DB_USERNAME: ${DB_USERNAME} # <-- From .env
       DB_PASSWORD: ${DB_PASSWORD} # <-- From .env
       DB_DIALECT: ${DB_DIALECT} # <-- From .env
+      ADMIN_USER_PASSWORD: ${ADMIN_USER_PASSWORD}
+      REGULAR_USER_PASSWORD: ${REGULAR_USER_PASSWORD}
     command: sh -c "npm run migrate && npm run seed"
     depends_on:
       postgres:

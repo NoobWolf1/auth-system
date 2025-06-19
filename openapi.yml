@@ -1,0 +1,647 @@
+openapi: 3.0.0
+info:
+  title: "Authentication System API"
+  description: |
+    API for user authentication, profile management, and admin user management within an application.
+  version: "1.0.0"
+servers:
+  - url: "http://localhost:3000"
+    description: "Local Development Server"
+tags:
+  - name: "Authentication"
+    description: "Endpoints for user registration, login, token refresh, and logout."
+  - name: "Users"
+    description: "Endpoints for current user profile management."
+  - name: "Admin"
+    description: "Endpoints for administrative user management (listing, retrieving, updating, deleting users)."
+  - name: "Health"
+    description: "Application health check endpoint."
+
+paths:
+  /api/health:
+    get:
+      summary: "Get Application Health Status"
+      description: "Checks if the API is running and responsive."
+      operationId: "getHealthStatus"
+      tags:
+        - "Health"
+      responses:
+        200:
+          description: "API is healthy and running."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "OK"
+                  uptime:
+                    type: string
+                    example: "12d 5h 30m"
+        500:
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/auth/register:
+    post:
+      summary: "User Registration"
+      description: "Registers a new user with email, password, and optional profile details."
+      operationId: "registerUser"
+      tags:
+        - "Authentication"
+      requestBody:
+        description: "User registration details."
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRegistration"
+      responses:
+        201:
+          description: "User registered successfully."
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "User registered successfully."
+                  user:
+                    $ref: "#/components/schemas/UserProfile"
+        400:
+          $ref: "#/components/responses/BadRequest"
+        500:
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/auth/login:
+    post:
+      summary: "User Login"
+      description: "Authenticates a user and provides access and refresh tokens."
+      operationId: "loginUser"
+      tags:
+        - "Authentication"
+      requestBody:
+        description: "User login credentials (email and password)."
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserLogin"
+      responses:
+        200:
+          description: "User logged in successfully."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthTokens"
+        400:
+          $ref: "#/components/responses/BadRequest"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        500:
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/auth/refresh:
+    post:
+      summary: "Refresh Token"
+      description: "Obtains new access and refresh tokens using an existing refresh token."
+      operationId: "refreshToken"
+      tags:
+        - "Authentication"
+      requestBody:
+        description: "Refresh token to obtain new tokens."
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefreshTokenRequest"
+      responses:
+        200:
+          description: "Tokens refreshed successfully."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthTokens"
+        400:
+          $ref: "#/components/responses/BadRequest"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        500:
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/auth/logout:
+    post:
+      summary: "User Logout"
+      description: "Invalidates the current user's session by revoking tokens. Requires authentication."
+      operationId: "logoutUser"
+      tags:
+        - "Authentication"
+      security:
+        - bearerAuth: []
+      responses:
+        204:
+          description: "User logged out successfully (No Content)."
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        500:
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/user/profile:
+    get:
+      summary: "Get Current User Profile"
+      description: "Retrieves the profile information of the currently authenticated user."
+      operationId: "getCurrentUserProfile"
+      tags:
+        - "Users"
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: "Current user profile retrieved successfully."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        500:
+          $ref: "#/components/responses/InternalServerError"
+    put:
+      summary: "Update Current User Profile"
+      description: "Updates the profile information of the currently authenticated user."
+      operationId: "updateCurrentUserProfile"
+      tags:
+        - "Users"
+      security:
+        - bearerAuth: []
+      requestBody:
+        description: "Partial user profile data to update. All fields are optional for update."
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserProfileUpdate"
+      responses:
+        200:
+          description: "User profile updated successfully."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        400:
+          $ref: "#/components/responses/BadRequest"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        500:
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/admin/users:
+    get:
+      summary: "Get All Users (Admin)"
+      description: "Retrieves a paginated list of all users. Requires admin privileges."
+      operationId: "getAllUsersAdmin"
+      tags:
+        - "Admin"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          description: "Page number for pagination."
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            default: 1
+          example: 2
+        - name: limit
+          in: query
+          description: "Number of items per page."
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 100
+            default: 10
+          example: 5
+        - name: sortBy
+          in: query
+          description: "Field to sort by (e.g., createdAt, email, firstName)."
+          required: false
+          schema:
+            type: string
+            default: "createdAt"
+            enum: [ "createdAt", "email", "firstName", "lastName", "role" ]
+          example: "createdAt"
+        - name: sortOrder
+          in: query
+          description: "Sort order (asc or desc)."
+          required: false
+          schema:
+            type: string
+            enum: [ "asc", "desc" ]
+            default: "desc"
+          example: "desc"
+      responses:
+        200:
+          description: "List of users retrieved successfully."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedUsers"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        403:
+          $ref: "#/components/responses/ForbiddenError"
+        500:
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/admin/users/{id}:
+    get:
+      summary: "Get User By ID (Admin)"
+      description: "Retrieves a single user's profile by their ID. Requires admin privileges."
+      operationId: "getUserByIdAdmin"
+      tags:
+        - "Admin"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: "ID of the user to retrieve."
+          required: true
+          schema:
+            type: string
+            format: uuid
+            example: "31ed4682-7d39-483f-8145-d75986360912"
+      responses:
+        200:
+          description: "User profile retrieved successfully."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        403:
+          $ref: "#/components/responses/ForbiddenError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        500:
+          $ref: "#/components/responses/InternalServerError"
+    delete:
+      summary: "Delete User By ID (Admin)"
+      description: "Deletes a user by their ID. Requires admin privileges."
+      operationId: "deleteUserByIdAdmin"
+      tags:
+        - "Admin"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: "ID of the user to delete."
+          required: true
+          schema:
+            type: string 
+            format: uuid
+            example: "31ed4682-7d39-483f-8145-d75986360912"
+      responses:
+        204:
+          description: "User deleted successfully (No Content)."
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        403:
+          $ref: "#/components/responses/ForbiddenError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        500:
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/admin/users/{id}/status:
+    put:
+      summary: "Update User Status (Admin)"
+      description: "Updates the active status of a user by their ID. Requires admin privileges."
+      operationId: "updateUserStatusAdmin"
+      tags:
+        - "Admin"
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          description: "ID of the user whose status to update."
+          required: true
+          schema:
+            type: string 
+            format: uuid
+            example: "31ed4682-7d39-483f-8145-d75986360912"
+      requestBody:
+        description: "New status for the user."
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserStatusUpdate"
+      responses:
+        200:
+          description: "User status updated successfully."
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        400:
+          $ref: "#/components/responses/BadRequest"
+        401:
+          $ref: "#/components/responses/UnauthorizedError"
+        403:
+          $ref: "#/components/responses/ForbiddenError"
+        404:
+          $ref: "#/components/responses/NotFoundError"
+        500:
+          $ref: "#/components/responses/InternalServerError"
+
+components:
+  schemas:
+    Error:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: "A human-readable error message."
+          example: "Invalid input provided."
+        statusCode:
+          type: integer
+          format: int32
+          description: "HTTP status code."
+          example: 400
+    UserRegistration:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: "User's email address."
+          example: "user@example.com"
+        password:
+          type: string
+          format: password
+          description: "User's password. Must be strong."
+          minLength: 8
+          example: "MyStrongP@ssw0rd!"
+        firstName:
+          type: string
+          description: "User's first name."
+          example: "John"
+        lastName:
+          type: string
+          description: "User's last name."
+          example: "Doe"
+        role:
+          type: string
+          description: "User's role within the system."
+          enum: [ "PM", "Admin", "Legal", "Sales" ] 
+          example: "PM"
+      example:
+        email: "PM@example.com"
+        password: "PM123m122"
+        firstName: "Projectesh"
+        lastName: "Manageresh"
+        role: "PM"
+    UserLogin:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: "User's email address."
+          example: "user@example.com"
+        password:
+          type: string
+          format: password
+          description: "User's password."
+          example: "PM123m122"
+      example:
+        email: "PM@example.com"
+        password: "PM123m122"
+    RefreshTokenRequest:
+      type: object
+      required:
+        - refreshToken
+      properties:
+        refreshToken:
+          type: string
+          description: "JWT refresh token obtained during login."
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIzMWVkNDY4Mi03ZDM5LTQ4M2YtODE0NS1kNzU5ODYzNjA5MTIiLCJpYXQiOjE3NTAzNDM4MDcsImV4cCI6MTc1MDk0ODYwN30.JY62RmHn_OgTqGOOCz-c7u1ThvN2MAnAbRp-YTunWpM"
+    AuthTokens:
+      type: object
+      required:
+        - accessToken
+        - refreshToken
+      properties:
+        accessToken:
+          type: string
+          description: "JWT access token for authenticated requests."
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI4MjkzYzVkMS0yZTg3LTQwMTYtYWQ2Ni03MzA4YTU3MWFmYjUiLCJpYXQiOjE3NTAzNTIxNTEsImV4cCI6MTc1MDQzODU1MX0.l2NQ-N2N6u4DKnX3m6cv-onKbaEe6rql_PGxpRKqCno"
+        refreshToken:
+          type: string
+          description: "JWT refresh token for obtaining new access tokens."
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIzMWVkNDY4Mi03ZDM5LTQ4M2YtODE0NS1kNzU5ODYzNjA5MTIiLCJpYXQiOjE3NTAzNDM4MDcsImV4cCI6MTc1MDk0ODYwN30.JY62RmHn_OgTqGOOCz-c7u1ThvN2MAnAbRp-YTunWpM"
+    UserProfile:
+      type: object
+      required:
+        - id
+        - email
+        - firstName
+        - lastName
+        - role
+        - isActive
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: "Unique identifier for the user."
+          example: "8293c5d1-2e87-4016-ad66-7308a571afb5"
+        email:
+          type: string
+          format: email
+          description: "User's email address."
+          example: "john.doe@example.com"
+        firstName:
+          type: string
+          description: "User's first name."
+          example: "John"
+        lastName:
+          type: string
+          description: "User's last name."
+          example: "Doe"
+        role:
+          type: string
+          description: "User's assigned role."
+          enum: [ "Admin", "PM", "Legal", "Sales" ]
+          example: "User"
+        isActive:
+          type: boolean
+          description: "Indicates if the user account is active."
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+          description: "Timestamp when the user account was created."
+          example: "2024-01-15T10:00:00Z"
+        updatedAt:
+          type: string
+          format: date-time
+          description: "Timestamp when the user account was last updated."
+          example: "2024-01-15T10:30:00Z"
+      example:
+        id: "8293c5d1-2e87-4016-ad66-7308a571afb5"
+        email: "PM@example.com"
+        firstName: "Projectesh"
+        lastName: "Manageresh"
+        role: "PM"
+        isActive: true
+        createdAt: "2024-06-15T10:00:00Z"
+        updatedAt: "2024-06-15T10:30:00Z"
+    UserProfileUpdate:
+      type: object
+      properties:
+        firstName:
+          type: string
+          description: "User's updated first name."
+          example: "Updated Name"
+        lastName:
+          type: string
+          description: "User's updated last name."
+          example: "Updated Last"
+      example:
+        firstName: "Updated Name"
+        lastName: "Updated Last"
+    UserStatusUpdate:
+      type: object
+      required:
+        - isActive
+      properties:
+        isActive:
+          type: boolean
+          description: "The new active status for the user."
+          example: true
+      example:
+        isActive: true
+    PaginatedUsers:
+      type: object
+      required:
+        - users
+        - total
+        - page
+        - limit
+      properties:
+        users:
+          type: array
+          items:
+            $ref: "#/components/schemas/UserProfile"
+          description: "Array of user profiles."
+        total:
+          type: integer
+          description: "Total number of users available."
+          example: 100
+        page:
+          type: integer
+          description: "Current page number."
+          example: 2
+        limit:
+          type: integer
+          description: "Number of users per page."
+          example: 5
+      example:
+        users:
+          - id: "user1-id"
+            email: "user1@example.com"
+            firstName: "UserOne"
+            lastName: "LastOne"
+            role: "User"
+            isActive: true
+            createdAt: "2024-01-01T00:00:00Z"
+            updatedAt: "2024-01-01T00:00:00Z"
+          - id: "user2-id"
+            email: "user2@example.com"
+            firstName: "UserTwo"
+            lastName: "LastTwo"
+            role: "User"
+            isActive: true
+            createdAt: "2024-01-02T00:00:00Z"
+            updatedAt: "2024-01-02T00:00:00Z"
+        total: 10
+        page: 1
+        limit: 2
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: "JWT Authorization header using the Bearer scheme. Example: 'Authorization: Bearer {token}'"
+
+  responses:
+    BadRequest:
+      description: "Bad Request - The request was malformed or invalid."
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            message: "Invalid input data provided."
+            statusCode: 400
+    UnauthorizedError:
+      description: "Unauthorized - Authentication is required or has failed."
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            message: "Authentication token is missing or invalid."
+            statusCode: 401
+    ForbiddenError:
+      description: "Forbidden - The user does not have the necessary permissions for a resource."
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            message: "You do not have permission to access this resource."
+            statusCode: 403
+    NotFoundError:
+      description: "Not Found - The requested resource could not be found."
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            message: "Resource not found."
+            statusCode: 404
+    InternalServerError:
+      description: "Internal Server Error - An unexpected error occurred on the server."
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            message: "An internal server error occurred."
+            statusCode: 500
